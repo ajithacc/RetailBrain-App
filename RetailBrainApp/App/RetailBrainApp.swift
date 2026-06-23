@@ -12,7 +12,6 @@ import RetailBrainSDK
 struct RetailBrainApp: App {
 
     init() {
-
         RetailBrainManager.shared.initialize(
             config: RetailBrainConfig(
                 apiKey: MapConfig.apiKey,
