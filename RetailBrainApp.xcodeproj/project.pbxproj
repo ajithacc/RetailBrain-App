@@ -6,8 +6,28 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2CACF3902FE94C7000E7A647 /* RetailBrainSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2CACF38F2FE94C7000E7A647 /* RetailBrainSDK.framework */; };
+		2CACF3912FE94C7000E7A647 /* RetailBrainSDK.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2CACF38F2FE94C7000E7A647 /* RetailBrainSDK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2CACF3922FE94C7000E7A647 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				2CACF3912FE94C7000E7A647 /* RetailBrainSDK.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		2CACF3382FE943EF00E7A647 /* RetailBrainApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetailBrainApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2CACF38F2FE94C7000E7A647 /* RetailBrainSDK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = RetailBrainSDK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -23,6 +43,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2CACF3902FE94C7000E7A647 /* RetailBrainSDK.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -33,6 +54,7 @@
 			isa = PBXGroup;
 			children = (
 				2CACF33A2FE943EF00E7A647 /* RetailBrainApp */,
+				2CACF38E2FE94C7000E7A647 /* Frameworks */,
 				2CACF3392FE943EF00E7A647 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -45,6 +67,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		2CACF38E2FE94C7000E7A647 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				2CACF38F2FE94C7000E7A647 /* RetailBrainSDK.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -55,6 +85,7 @@
 				2CACF3342FE943EF00E7A647 /* Sources */,
 				2CACF3352FE943EF00E7A647 /* Frameworks */,
 				2CACF3362FE943EF00E7A647 /* Resources */,
+				2CACF3922FE94C7000E7A647 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
