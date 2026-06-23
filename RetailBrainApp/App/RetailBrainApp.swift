@@ -21,7 +21,6 @@ struct RetailBrainApp: App {
             )
         )
     }
-
     var body: some Scene {
         WindowGroup {
             ContentView()
