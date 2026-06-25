@@ -27,8 +27,10 @@ struct ContentView: View {
             ItemSelectionSheet(items: StoreLocations.shoppingItems) { selectedItems in
                 showSheet = false
 
-                let storeNames = Array(Set(selectedItems.map { $0.storeName }))
-                routingController.routeToStores(storeNames)
+                let routeAliases = selectedItems.map { item in
+                    item.name == item.storeName ? item.storeName : "\(item.storeName)|\(item.name)"
+                }
+                routingController.routeToStores(routeAliases)
             }
         }
     }
