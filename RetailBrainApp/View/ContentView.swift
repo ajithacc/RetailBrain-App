@@ -9,20 +9,18 @@ import SwiftUI
 import RetailBrainSDK
 
 struct ContentView: View {
-    @StateObject private var routingController = MapRoutingController()
+    
     @State private var showSheet = false
-    @State private var hasShownInitialSheet = false
-
+    @StateObject private var routingController = MapRoutingController()
+    
     var body: some View {
-        RetailMapView(
-            routingController: routingController,
-            onMapLoaded: {
-                guard !hasShownInitialSheet else { return }
-                hasShownInitialSheet = true
-                showSheet = true
-            }
-        )
-        .ignoresSafeArea()
+        ZStack {
+            RetailMapViewContainer(
+                isSheetPresented: $showSheet,
+                routingController: routingController
+            )
+                .ignoresSafeArea()
+        }
         .sheet(isPresented: $showSheet) {
             ItemSelectionSheet(items: StoreLocations.shoppingItems) { selectedItems in
                 showSheet = false
@@ -35,3 +33,18 @@ struct ContentView: View {
         }
     }
 }
+
+/// A container that manages the map view and handles routing
+private struct RetailMapViewContainer: View {
+    @Binding var isSheetPresented: Bool
+    @ObservedObject var routingController: MapRoutingController
+    
+    var body: some View {
+        RetailMapView(routingController: routingController, onLaunch: {
+            isSheetPresented = true
+        })
+    }
+}
+
+
+
