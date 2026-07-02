@@ -11,40 +11,68 @@ import RetailBrainSDK
 struct MapPageView: View {
     @State private var showSheet = false
     @State private var selectedItems: [ShoppingItem] = []
+    @State private var permissionMonitor = PermissionMonitor()
+    @State private var permissionDelegate: MapPagePermissionDelegate?
+    @State private var showPermissionRevokedAlert = false
+    @State private var revokedPermissionType: String = ""
+    @State private var isPermissionRevokedOnMap = false
+    @Environment(\.scenePhase) var scenePhase
+    
     @StateObject private var routingController = MapRoutingController()
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Top Search Bar (Demo App responsibility)
-            SearchBarView()
-                .padding(16)
-                .background(Color.white)
-            
-            // Map (SDK responsibility) - fills remaining space
-            ZStack {
-                RetailMapViewContainer(
-                    isSheetPresented: $showSheet,
-                    routingController: routingController
-                )
-                .ignoresSafeArea()
+        ZStack {
+            VStack(spacing: 0) {
+                SearchBarView()
+                    .padding(16)
+                    .background(Color.white)
                 
-                // Bottom Floating Action Button (Demo App responsibility)
-                VStack {
-                    Spacer()
-                    HStack {
+                ZStack {
+                    RetailMapViewContainer(
+                        isSheetPresented: $showSheet,
+                        routingController: routingController
+                    )
+                    .ignoresSafeArea()
+                    .disabled(isPermissionRevokedOnMap)
+                    .opacity(isPermissionRevokedOnMap ? 0.5 : 1.0)
+                    
+                    VStack {
                         Spacer()
-                        Button(action: { showSheet = true }) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 24, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 60, height: 60)
-                                .background(Color.purple)
-                                .clipShape(Circle())
-                                .shadow(radius: 4)
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                if !isPermissionRevokedOnMap {
+                                    showSheet = true
+                                }
+                            }) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 24, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 60, height: 60)
+                                    .background(Color.purple)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 4)
+                                    .opacity(isPermissionRevokedOnMap ? 0.5 : 1.0)
+                            }
+                            .padding(20)
+                            .disabled(isPermissionRevokedOnMap)
                         }
-                        .padding(20)
                     }
                 }
+            }
+            
+            if showPermissionRevokedAlert {
+                PermissionRevokedAlertView(
+                    permissionType: revokedPermissionType,
+                    onOpenSettings: {
+                        if let appSettings = URL(string: "app-settings://") {
+                            UIApplication.shared.open(appSettings)
+                        }
+                    },
+                    onCancel: {
+                        showPermissionRevokedAlert = false
+                    }
+                )
             }
         }
         .sheet(isPresented: $showSheet) {
@@ -57,6 +85,47 @@ struct MapPageView: View {
                 routingController.routeToStores(routeAliases)
             }
         }
+        .onAppear {
+            permissionDelegate = MapPagePermissionDelegate(
+                onPermissionRevoked: { revokedPermission in
+                    isPermissionRevokedOnMap = true
+                    revokedPermissionType = revokedPermission == .location ? "Location" : "Bluetooth"
+                    showPermissionRevokedAlert = true
+                    routingController.clearRoute()
+                }
+            )
+            permissionMonitor.delegate = permissionDelegate
+            permissionMonitor.startMonitoring()
+        }
+        .onDisappear {
+            permissionMonitor.stopMonitoring()
+        }
+        .onChange(of: scenePhase) {
+            if scenePhase == .active {
+                permissionMonitor.updateCurrentStatus()
+                if !PermissionManager.shared.areAllPermissionsGranted {
+                    isPermissionRevokedOnMap = true
+                } else {
+                    isPermissionRevokedOnMap = false
+                    showPermissionRevokedAlert = false
+                }
+                permissionMonitor.startMonitoring()
+            } else if scenePhase == .background {
+                permissionMonitor.stopMonitoring()
+            }
+        }
+    }
+}
+
+class MapPagePermissionDelegate: PermissionMonitorDelegate {
+    var onPermissionRevoked: (RevokedPermission) -> Void
+    
+    init(onPermissionRevoked: @escaping (RevokedPermission) -> Void) {
+        self.onPermissionRevoked = onPermissionRevoked
+    }
+    
+    func permissionMonitorDidDetectPermissionChange(_ monitor: PermissionMonitor, revokedPermission: RevokedPermission) {
+        onPermissionRevoked(revokedPermission)
     }
 }
 

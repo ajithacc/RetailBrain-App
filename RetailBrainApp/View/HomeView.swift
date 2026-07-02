@@ -6,10 +6,14 @@
 //
 
 import SwiftUI
+import CoreLocation
+import CoreBluetooth
 
 struct HomeView: View {
     @State private var showPermissionPopup = false
+    @State private var showPermissionDeniedAlert = false
     @State private var isRequestingPermissions = false
+    @State private var deniedPermissionMessage = ""
     var onPermissionsGranted: (() -> Void)?
     
     var body: some View {
@@ -43,11 +47,14 @@ struct HomeView: View {
                     
                     if PermissionManager.shared.areAllPermissionsGranted {
                         onPermissionsGranted?()
+                    } else if isPermissionPreviouslyDenied() {
+                        showPermissionDeniedAlert = true
+                        deniedPermissionMessage = getDeniedPermissionMessage()
                     } else {
                         showPermissionPopup = true
                     }
                 }) {
-                    Text("Start")
+                    Text("Start Shopping")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -72,6 +79,46 @@ struct HomeView: View {
                     isLoading: isRequestingPermissions
                 )
             }
+            
+            if showPermissionDeniedAlert {
+                PermissionDeniedAlertView(
+                    message: deniedPermissionMessage,
+                    onOpenSettings: {
+                        if let appSettings = URL(string: "app-settings://") {
+                            UIApplication.shared.open(appSettings)
+                        }
+                    },
+                    onCancel: {
+                        showPermissionDeniedAlert = false
+                    }
+                )
+            }
+        }
+    }
+    
+    private func isPermissionPreviouslyDenied() -> Bool {
+        let locationStatus = PermissionManager.shared.locationPermissionStatus
+        let bluetoothStatus = PermissionManager.shared.bluetoothPermissionStatus
+        
+        let isLocationDenied = locationStatus == .denied || locationStatus == .restricted
+        let isBluetoothDenied = bluetoothStatus == .denied || bluetoothStatus == .restricted
+        
+        return isLocationDenied || isBluetoothDenied
+    }
+    
+    private func getDeniedPermissionMessage() -> String {
+        let locationStatus = PermissionManager.shared.locationPermissionStatus
+        let bluetoothStatus = PermissionManager.shared.bluetoothPermissionStatus
+        
+        let isLocationDenied = locationStatus == .denied || locationStatus == .restricted
+        let isBluetoothDenied = bluetoothStatus == .denied || bluetoothStatus == .restricted
+        
+        if isLocationDenied && isBluetoothDenied {
+            return "Location and Bluetooth permissions are required to continue. Please enable both permissions in Settings."
+        } else if isLocationDenied {
+            return "Location permission is required to continue. Please enable it in Settings."
+        } else {
+            return "Bluetooth permission is required to continue. Please enable it in Settings."
         }
     }
     
