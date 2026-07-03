@@ -6,6 +6,8 @@
 //
 
 import Combine
+import CoreBluetooth
+import CoreLocation
 import Foundation
 import RetailBrainSDK
 
@@ -18,7 +20,19 @@ final class MapViewModel: ObservableObject {
 
     @Published var navigationState: NavigationState = .home
 
-    init() {
+    @Published var showPermissionPopup = false
+    @Published var showPermissionDeniedAlert = false
+    @Published var isRequestingPermissions = false
+    @Published var deniedPermissionMessage = ""
+
+    private let permissionManager: PermissionManager
+
+    var isAllPermissionsGranted: Bool {
+        permissionManager.areAllPermissionsGranted
+    }
+
+    init(permissionManager: PermissionManager = PermissionManager()) {
+        self.permissionManager = permissionManager
         initializeSDK()
     }
 
@@ -34,6 +48,85 @@ final class MapViewModel: ObservableObject {
                 mapId: MapConfig.mapId
             )
         )
+    }
+
+    func startShopping() {
+        permissionManager.updatePermissionStatuses()
+
+        if permissionManager.areAllPermissionsGranted {
+            navigationState = .map
+        } else if isPermissionPreviouslyDenied() {
+            deniedPermissionMessage = getDeniedPermissionMessage()
+            showPermissionDeniedAlert = true
+        } else {
+            showPermissionPopup = true
+        }
+    }
+
+    func acceptPermissions() {
+        isRequestingPermissions = true
+        requestPermissionsSequentially()
+    }
+
+    func declinePermissions() {
+        showPermissionPopup = false
+        isRequestingPermissions = false
+    }
+
+    func dismissPermissionDeniedAlert() {
+        showPermissionDeniedAlert = false
+    }
+
+    func isPermissionPreviouslyDenied() -> Bool {
+        let locationStatus = permissionManager.locationPermissionStatus
+        let bluetoothStatus = permissionManager.bluetoothPermissionStatus
+
+        let isLocationDenied = locationStatus == .denied || locationStatus == .restricted
+        let isBluetoothDenied = bluetoothStatus == .denied || bluetoothStatus == .restricted
+
+        return isLocationDenied || isBluetoothDenied
+    }
+
+    func getDeniedPermissionMessage() -> String {
+        let locationStatus = permissionManager.locationPermissionStatus
+        let bluetoothStatus = permissionManager.bluetoothPermissionStatus
+
+        let isLocationDenied = locationStatus == .denied || locationStatus == .restricted
+        let isBluetoothDenied = bluetoothStatus == .denied || bluetoothStatus == .restricted
+
+        if isLocationDenied && isBluetoothDenied {
+            return "Location and Bluetooth permissions are required to continue. Please enable both permissions in Settings."
+        } else if isLocationDenied {
+            return "Location permission is required to continue. Please enable it in Settings."
+        } else {
+            return "Bluetooth permission is required to continue. Please enable it in Settings."
+        }
+    }
+
+    private func requestPermissionsSequentially() {
+        permissionManager.requestLocationPermissionOnly { [weak self] locationGranted in
+            guard let self else { return }
+
+            if !locationGranted {
+                DispatchQueue.main.async {
+                    self.showPermissionPopup = false
+                    self.isRequestingPermissions = false
+                }
+                return
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.permissionManager.requestBluetoothPermissionOnly { bluetoothGranted in
+                    DispatchQueue.main.async {
+                        self.showPermissionPopup = false
+                        self.isRequestingPermissions = false
+                        if bluetoothGranted {
+                            self.navigationState = .map
+                        }
+                    }
+                }
+            }
+        }
     }
 
 }
