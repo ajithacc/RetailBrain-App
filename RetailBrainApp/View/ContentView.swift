@@ -9,20 +9,16 @@ import SwiftUI
 import RetailBrainSDK
 
 struct ContentView: View {
-    @State private var navigationState: NavigationState = .home
-    
-    enum NavigationState {
-        case home
-        case map
-    }
+
+    @StateObject private var viewModel = MapViewModel()
     
     var body: some View {
         ZStack {
-            switch navigationState {
+            switch viewModel.navigationState {
             case .home:
                 HomeView(
                     onPermissionsGranted: {
-                        navigationState = .map
+                        viewModel.navigationState = .map
                     }
                 )
             case .map:
