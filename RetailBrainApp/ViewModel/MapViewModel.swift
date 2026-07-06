@@ -106,17 +106,19 @@ final class MapViewModel: ObservableObject {
     private func requestPermissionsSequentially() {
         permissionManager.requestLocationPermissionOnly { [weak self] locationGranted in
             guard let self else { return }
-
-            if !locationGranted {
+            // Location must be granted before we continue to Bluetooth.
+            guard locationGranted else {
                 DispatchQueue.main.async {
                     self.showPermissionPopup = false
                     self.isRequestingPermissions = false
                 }
                 return
             }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.permissionManager.requestBluetoothPermissionOnly { bluetoothGranted in
+            // Small delay so the location prompt has visually dismissed before the
+            // Bluetooth prompt appears.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.permissionManager.requestBluetoothPermissionOnly { [weak self] bluetoothGranted in
+                    guard let self else { return }
                     DispatchQueue.main.async {
                         self.showPermissionPopup = false
                         self.isRequestingPermissions = false

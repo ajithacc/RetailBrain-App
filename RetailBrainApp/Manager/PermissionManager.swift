@@ -54,17 +54,14 @@ class PermissionManager: NSObject, CLLocationManagerDelegate, CBCentralManagerDe
             }
             return
         }
+        if locationPermissionStatus == .denied || locationPermissionStatus == .restricted {
+            DispatchQueue.main.async {
+                completion(false)
+            }
+            return
+        }
         self.locationCompletion = completion
         locationManager.requestWhenInUseAuthorization()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-            self?.updatePermissionStatuses()
-            if let completion = self?.locationCompletion {
-                let granted = self?.isLocationPermissionGranted ?? false
-                completion(granted)
-                self?.locationCompletion = nil
-            }
-        }
     }
 
     func requestBluetoothPermissionOnly(completion: @escaping (Bool) -> Void) {
@@ -76,20 +73,21 @@ class PermissionManager: NSObject, CLLocationManagerDelegate, CBCentralManagerDe
             }
             return
         }
-        self.bluetoothCompletion = completion
-
-        centralManager = CBCentralManager(delegate: self, queue: .main)
-
-        let timeoutDuration: TimeInterval = isSimulator() ? 3.0 : 2.0
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + timeoutDuration) { [weak self] in
-            self?.updatePermissionStatuses()
-            if let completion = self?.bluetoothCompletion {
-                let granted = self?.isBluetoothPermissionGranted ?? false
-                completion(granted)
-                self?.bluetoothCompletion = nil
+        if bluetoothPermissionStatus == .denied || bluetoothPermissionStatus == .restricted {
+            DispatchQueue.main.async {
+                completion(false)
             }
-            self?.centralManager = nil
+            return
+        }
+        self.bluetoothCompletion = completion
+        centralManager = CBCentralManager(delegate: self, queue: .main)
+        let timeoutDuration: TimeInterval = isSimulator() ? 5.0 : 10.0
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeoutDuration) { [weak self] in
+            guard let self, let completion = self.bluetoothCompletion else { return }
+            self.updatePermissionStatuses()
+            completion(self.isBluetoothPermissionGranted)
+            self.bluetoothCompletion = nil
+            self.centralManager = nil
         }
     }
 
@@ -145,9 +143,11 @@ class PermissionManager: NSObject, CLLocationManagerDelegate, CBCentralManagerDe
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         updatePermissionStatuses()
 
+        guard locationPermissionStatus != .notDetermined else { return }
+
         if let completion = locationCompletion {
-            completion(isLocationPermissionGranted)
             locationCompletion = nil
+            completion(isLocationPermissionGranted)
         }
 
         if !requestCompletions.isEmpty {
@@ -161,9 +161,12 @@ class PermissionManager: NSObject, CLLocationManagerDelegate, CBCentralManagerDe
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         updatePermissionStatuses()
 
+        guard bluetoothPermissionStatus != .notDetermined else { return }
+
         if let completion = bluetoothCompletion {
-            completion(isBluetoothPermissionGranted)
             bluetoothCompletion = nil
+            centralManager = nil
+            completion(isBluetoothPermissionGranted)
         }
 
         if !requestCompletions.isEmpty {
