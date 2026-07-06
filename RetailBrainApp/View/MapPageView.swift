@@ -20,17 +20,22 @@ struct MapPageView: View {
     
     @StateObject private var routingController = MapRoutingController()
     
+    let mode: MapNavigationMode
+    let onBack: () -> Void
+    
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                SearchBarView()
+                SearchBarView(onBack: onBack)
                     .padding(16)
                     .background(Color.white)
                 
                 ZStack {
                     RetailMapViewContainer(
                         isSheetPresented: $showSheet,
-                        routingController: routingController
+                        routingController: routingController,
+                        mapId: mode.mapId,
+                        isMultiFloorMode: mode.isMultiFloorEnabled
                     )
                     .ignoresSafeArea()
                     .disabled(isPermissionRevokedOnMap)
@@ -76,7 +81,7 @@ struct MapPageView: View {
             }
         }
         .sheet(isPresented: $showSheet) {
-            ItemSelectionSheet(items: StoreLocations.shoppingItems) { selectedItems in
+            ItemSelectionSheet(items: StoreLocations.shoppingItems(for: mode)) { selectedItems in
                 showSheet = false
 
                 let routeAliases = selectedItems.map { item in
@@ -130,15 +135,28 @@ class MapPagePermissionDelegate: PermissionMonitorDelegate {
 }
 
 struct SearchBarView: View {
+    let onBack: () -> Void
     @State private var searchText = ""
     
     var body: some View {
         HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.gray)
+            Button(action: onBack) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.gray)
+                    .frame(width: 32, height: 32)
+            }
             
-            TextField("Search in store...", text: $searchText)
-                .textFieldStyle(.roundedBorder)
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.gray)
+
+                TextField("Search in store...", text: $searchText)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 40)
+            .background(Color(UIColor.systemGray6))
+            .cornerRadius(10)
             
             if !searchText.isEmpty {
                 Button(action: { searchText = "" }) {
@@ -154,5 +172,5 @@ struct SearchBarView: View {
 }
 
 #Preview {
-    MapPageView()
+    MapPageView(mode: .singleFloor, onBack: {})
 }

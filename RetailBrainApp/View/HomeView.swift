@@ -14,7 +14,8 @@ struct HomeView: View {
     @State private var showPermissionDeniedAlert = false
     @State private var isRequestingPermissions = false
     @State private var deniedPermissionMessage = ""
-    var onPermissionsGranted: (() -> Void)?
+    @State private var selectedMode: MapNavigationMode = .singleFloor
+    var onPermissionsGranted: ((MapNavigationMode) -> Void)?
     
     var body: some View {
         ZStack {
@@ -42,11 +43,42 @@ struct HomeView: View {
                 
                 Spacer()
                 
+                VStack(spacing: 12) {
+                    Text("Select Map Type")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.gray)
+                    
+                    HStack(spacing: 12) {
+                        Button(action: { selectedMode = .singleFloor }) {
+                            Text("Single Floor")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(selectedMode == .singleFloor ? .white : .purple)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(selectedMode == .singleFloor ? Color.purple : Color.purple.opacity(0.1))
+                                .cornerRadius(8)
+                        }
+                        
+                        Button(action: { selectedMode = .multiFloor }) {
+                            Text("Multi Floor")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(selectedMode == .multiFloor ? .white : .purple)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(selectedMode == .multiFloor ? Color.purple : Color.purple.opacity(0.1))
+                                .cornerRadius(8)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                
+                Spacer()
+                
                 Button(action: {
                     PermissionManager.shared.updatePermissionStatuses()
                     
                     if PermissionManager.shared.areAllPermissionsGranted {
-                        onPermissionsGranted?()
+                        onPermissionsGranted?(selectedMode)
                     } else if isPermissionPreviouslyDenied() {
                         showPermissionDeniedAlert = true
                         deniedPermissionMessage = getDeniedPermissionMessage()
@@ -138,7 +170,7 @@ struct HomeView: View {
                         if bluetoothGranted {
                             showPermissionPopup = false
                             isRequestingPermissions = false
-                            onPermissionsGranted?()
+                            onPermissionsGranted?(selectedMode)
                         } else {
                             showPermissionPopup = false
                             isRequestingPermissions = false
@@ -148,8 +180,4 @@ struct HomeView: View {
             }
         }
     }
-}
-
-#Preview {
-    HomeView(onPermissionsGranted: {})
 }

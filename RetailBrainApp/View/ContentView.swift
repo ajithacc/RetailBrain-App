@@ -10,6 +10,7 @@ import RetailBrainSDK
 
 struct ContentView: View {
     @State private var navigationState: NavigationState = .home
+    @State private var selectedMode: MapNavigationMode = .singleFloor
     
     enum NavigationState {
         case home
@@ -21,12 +22,20 @@ struct ContentView: View {
             switch navigationState {
             case .home:
                 HomeView(
-                    onPermissionsGranted: {
+                    onPermissionsGranted: { mode in
+                        selectedMode = mode
+                        RetailBrainManager.shared.initialize(config: mode.sdkConfig)
+                        StoreLocations.setupStoreShoppingItems(for: mode)
                         navigationState = .map
                     }
                 )
             case .map:
-                MapPageView()
+                MapPageView(
+                    mode: selectedMode,
+                    onBack: {
+                        navigationState = .home
+                    }
+                )
             }
         }
     }
@@ -35,9 +44,15 @@ struct ContentView: View {
 struct RetailMapViewContainer: View {
     @Binding var isSheetPresented: Bool
     let routingController: MapRoutingController
+    let mapId: String
+    let isMultiFloorMode: Bool
     
     var body: some View {
-        RetailMapView(routingController: routingController)
+        RetailMapView(
+            routingController: routingController,
+            mapId: mapId,
+            isMultiFloorMode: isMultiFloorMode
+        )
     }
 }
 

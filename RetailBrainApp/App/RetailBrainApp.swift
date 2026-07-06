@@ -49,17 +49,11 @@ struct RetailBrainApp: App {
     init() {
         RetailBrainManager.shared.delegate = sdkCallbacks
 
-        // 1. Setup store shopping items in the app
-        StoreLocations.setupStoreShoppingItems()
+        // 1. Setup initial shopping items; Home selection will update this per mode.
+        StoreLocations.setupStoreShoppingItems(for: .singleFloor)
 
         // 2. Initialize RetailBrainSDK with map configuration
-        RetailBrainManager.shared.initialize(
-            config: RetailBrainConfig(
-                apiKey: MapConfig.apiKey,
-                apiSecret: MapConfig.apiSecret,
-                mapId: MapConfig.mapId
-            )
-        )
+        RetailBrainManager.shared.initialize(config: MapNavigationMode.singleFloor.sdkConfig)
     }
 
     var body: some Scene {
