@@ -25,11 +25,7 @@ final class MapViewModel: ObservableObject {
     @Published var isRequestingPermissions = false
     @Published var deniedPermissionMessage = ""
     
-    @Published var selectedMode: MapNavigationMode = .singleFloor {
-        didSet {
-            print(selectedMode.rawValue)
-        }
-    }
+    @Published var selectedMode: MapNavigationMode = .singleFloor 
 
     private let permissionManager: PermissionManager
 

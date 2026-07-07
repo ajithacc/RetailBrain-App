@@ -17,33 +17,26 @@ struct HomeView: View {
         ZStack {
             Color.white
                 .ignoresSafeArea()
-            
             VStack(spacing: 32) {
                 Spacer()
-                
                 VStack(spacing: 16) {
                     Image(systemName: "location.viewfinder")
                         .font(.system(size: 80))
                         .foregroundColor(.purple)
-                    
                     VStack(spacing: 8) {
                         Text("Retail Brain")
                             .font(.system(size: 32, weight: .bold))
                             .foregroundColor(.black)
-                        
                         Text("Your Smart Shopping Guide")
                             .font(.system(size: 16))
                             .foregroundColor(.gray)
                     }
                 }
-                
                 Spacer()
-                
                 VStack(spacing: 12) {
                     Text("Select Map Type")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.gray)
-                    
                     HStack(spacing: 12) {
                         Button(action: { viewModel.selectedMode = .singleFloor }) {
                             Text("Single Floor")
@@ -54,7 +47,6 @@ struct HomeView: View {
                                 .background(viewModel.selectedMode == .singleFloor ? Color.purple : Color.purple.opacity(0.1))
                                 .cornerRadius(8)
                         }
-                        
                         Button(action: {viewModel.selectedMode = .multiFloor }) {
                             Text("Multi Floor")
                                 .font(.system(size: 14, weight: .semibold))
@@ -67,9 +59,7 @@ struct HomeView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                
                 Spacer()
-                
                 Button(action: {
                     viewModel.initializeSDK()
                     viewModel.startShopping()
