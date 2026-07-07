@@ -9,31 +9,26 @@ import SwiftUI
 import RetailBrainSDK
 
 struct ContentView: View {
-    @State private var navigationState: NavigationState = .home
-    @State private var selectedMode: MapNavigationMode = .singleFloor
+    
+    // @State private var selectedMode: MapNavigationMode = .singleFloor
     
     enum NavigationState {
         case home
         case map
     }
-    
+
+    @StateObject private var viewModel = MapViewModel()
+
     var body: some View {
         ZStack {
-            switch navigationState {
+            switch viewModel.navigationState {
             case .home:
-                HomeView(
-                    onPermissionsGranted: { mode in
-                        selectedMode = mode
-                        RetailBrainManager.shared.initialize(config: mode.sdkConfig)
-                        StoreLocations.setupStoreShoppingItems(for: mode)
-                        navigationState = .map
-                    }
-                )
+                HomeView(viewModel: viewModel)
             case .map:
                 MapPageView(
-                    mode: selectedMode,
+                    mode: viewModel.selectedMode,
                     onBack: {
-                        navigationState = .home
+                        viewModel.navigationState = .home
                     }
                 )
             }
@@ -55,7 +50,6 @@ struct RetailMapViewContainer: View {
         )
     }
 }
-
 #Preview {
     ContentView()
 }

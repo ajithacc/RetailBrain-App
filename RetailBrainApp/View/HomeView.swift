@@ -10,12 +10,8 @@ import CoreLocation
 import CoreBluetooth
 
 struct HomeView: View {
-    @State private var showPermissionPopup = false
-    @State private var showPermissionDeniedAlert = false
-    @State private var isRequestingPermissions = false
-    @State private var deniedPermissionMessage = ""
-    @State private var selectedMode: MapNavigationMode = .singleFloor
-    var onPermissionsGranted: ((MapNavigationMode) -> Void)?
+    
+    @ObservedObject var viewModel: MapViewModel
     
     var body: some View {
         ZStack {
@@ -49,23 +45,23 @@ struct HomeView: View {
                         .foregroundColor(.gray)
                     
                     HStack(spacing: 12) {
-                        Button(action: { selectedMode = .singleFloor }) {
+                        Button(action: { viewModel.selectedMode = .singleFloor }) {
                             Text("Single Floor")
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(selectedMode == .singleFloor ? .white : .purple)
+                                .foregroundColor(viewModel.selectedMode == .singleFloor ? .white : .purple)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
-                                .background(selectedMode == .singleFloor ? Color.purple : Color.purple.opacity(0.1))
+                                .background(viewModel.selectedMode == .singleFloor ? Color.purple : Color.purple.opacity(0.1))
                                 .cornerRadius(8)
                         }
                         
-                        Button(action: { selectedMode = .multiFloor }) {
+                        Button(action: {viewModel.selectedMode = .multiFloor }) {
                             Text("Multi Floor")
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(selectedMode == .multiFloor ? .white : .purple)
+                                .foregroundColor(viewModel.selectedMode == .multiFloor ? .white : .purple)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
-                                .background(selectedMode == .multiFloor ? Color.purple : Color.purple.opacity(0.1))
+                                .background(viewModel.selectedMode == .multiFloor ? Color.purple : Color.purple.opacity(0.1))
                                 .cornerRadius(8)
                         }
                     }
@@ -75,108 +71,44 @@ struct HomeView: View {
                 Spacer()
                 
                 Button(action: {
-                    PermissionManager.shared.updatePermissionStatuses()
-                    
-                    if PermissionManager.shared.areAllPermissionsGranted {
-                        onPermissionsGranted?(selectedMode)
-                    } else if isPermissionPreviouslyDenied() {
-                        showPermissionDeniedAlert = true
-                        deniedPermissionMessage = getDeniedPermissionMessage()
-                    } else {
-                        showPermissionPopup = true
-                    }
+                    viewModel.initializeSDK()
+                    viewModel.startShopping()
                 }) {
                     Text("Start Shopping")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
+                        .frame(width: UIScreen.main.bounds.width - 40)
                         .background(Color.purple)
                         .cornerRadius(12)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 40)
             }
-            
-            if showPermissionPopup {
+            // Permission
+            if viewModel.showPermissionPopup {
                 PermissionPopupView(
                     onAccept: {
-                        isRequestingPermissions = true
-                        requestPermissionsSequentially()
+                        viewModel.acceptPermissions()
                     },
                     onDecline: {
-                        showPermissionPopup = false
-                        isRequestingPermissions = false
+                        viewModel.declinePermissions()
                     },
-                    isLoading: isRequestingPermissions
+                    isLoading: viewModel.isRequestingPermissions
                 )
             }
-            
-            if showPermissionDeniedAlert {
+            // Permission error alert
+            if viewModel.showPermissionDeniedAlert {
                 PermissionDeniedAlertView(
-                    message: deniedPermissionMessage,
+                    message: viewModel.deniedPermissionMessage,
                     onOpenSettings: {
                         if let appSettings = URL(string: "app-settings://") {
                             UIApplication.shared.open(appSettings)
                         }
                     },
                     onCancel: {
-                        showPermissionDeniedAlert = false
+                        viewModel.dismissPermissionDeniedAlert()
                     }
                 )
-            }
-        }
-    }
-    
-    private func isPermissionPreviouslyDenied() -> Bool {
-        let locationStatus = PermissionManager.shared.locationPermissionStatus
-        let bluetoothStatus = PermissionManager.shared.bluetoothPermissionStatus
-        
-        let isLocationDenied = locationStatus == .denied || locationStatus == .restricted
-        let isBluetoothDenied = bluetoothStatus == .denied || bluetoothStatus == .restricted
-        
-        return isLocationDenied || isBluetoothDenied
-    }
-    
-    private func getDeniedPermissionMessage() -> String {
-        let locationStatus = PermissionManager.shared.locationPermissionStatus
-        let bluetoothStatus = PermissionManager.shared.bluetoothPermissionStatus
-        
-        let isLocationDenied = locationStatus == .denied || locationStatus == .restricted
-        let isBluetoothDenied = bluetoothStatus == .denied || bluetoothStatus == .restricted
-        
-        if isLocationDenied && isBluetoothDenied {
-            return "Location and Bluetooth permissions are required to continue. Please enable both permissions in Settings."
-        } else if isLocationDenied {
-            return "Location permission is required to continue. Please enable it in Settings."
-        } else {
-            return "Bluetooth permission is required to continue. Please enable it in Settings."
-        }
-    }
-    
-    private func requestPermissionsSequentially() {
-        PermissionManager.shared.requestLocationPermissionOnly { locationGranted in
-            if !locationGranted {
-                DispatchQueue.main.async {
-                    showPermissionPopup = false
-                    isRequestingPermissions = false
-                }
-                return
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                PermissionManager.shared.requestBluetoothPermissionOnly { bluetoothGranted in
-                    DispatchQueue.main.async {
-                        if bluetoothGranted {
-                            showPermissionPopup = false
-                            isRequestingPermissions = false
-                            onPermissionsGranted?(selectedMode)
-                        } else {
-                            showPermissionPopup = false
-                            isRequestingPermissions = false
-                        }
-                    }
-                }
             }
         }
     }

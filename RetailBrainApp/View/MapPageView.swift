@@ -9,6 +9,7 @@ import SwiftUI
 import RetailBrainSDK
 
 struct MapPageView: View {
+
     @State private var showSheet = false
     @State private var selectedItems: [ShoppingItem] = []
     @State private var permissionMonitor = PermissionMonitor()
@@ -17,6 +18,8 @@ struct MapPageView: View {
     @State private var revokedPermissionType: String = ""
     @State private var isPermissionRevokedOnMap = false
     @Environment(\.scenePhase) var scenePhase
+    
+    private let permissionManager = PermissionManager()
     
     @StateObject private var routingController = MapRoutingController()
     
@@ -108,7 +111,7 @@ struct MapPageView: View {
         .onChange(of: scenePhase) {
             if scenePhase == .active {
                 permissionMonitor.updateCurrentStatus()
-                if !PermissionManager.shared.areAllPermissionsGranted {
+                if !permissionManager.areAllPermissionsGranted {
                     isPermissionRevokedOnMap = true
                 } else {
                     isPermissionRevokedOnMap = false
