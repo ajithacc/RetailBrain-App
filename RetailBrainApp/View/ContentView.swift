@@ -9,22 +9,14 @@ import SwiftUI
 import RetailBrainSDK
 
 struct ContentView: View {
-    @State private var navigationState: NavigationState = .home
-    
-    enum NavigationState {
-        case home
-        case map
-    }
-    
+
+    @StateObject private var viewModel = MapViewModel()
+
     var body: some View {
         ZStack {
-            switch navigationState {
+            switch viewModel.navigationState {
             case .home:
-                HomeView(
-                    onPermissionsGranted: {
-                        navigationState = .map
-                    }
-                )
+                HomeView(viewModel: viewModel)
             case .map:
                 MapPageView()
             }
@@ -35,7 +27,7 @@ struct ContentView: View {
 struct RetailMapViewContainer: View {
     @Binding var isSheetPresented: Bool
     let routingController: MapRoutingController
-    
+
     var body: some View {
         RetailMapView(routingController: routingController)
     }
